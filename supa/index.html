@@ -572,11 +572,11 @@
     </div>
 
     <script>
-// Configuration (replace with your Supabase project URL and anon key)
-const SUPABASE_URL = 'https://dlebjzecztdyvlmnpkio.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZWJqemVjenRkeXZsbW5wa2lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE2NzUzMjYsImV4cCI6MjA1NzI1MTMyNn0.juYgH2QhcR7mHDbUtNSLtupkAaSRbTXc-qJVdcrgzoc';
+// Retrieve Supabase configuration from environment variables injected during build.
+// Note: process.env is available when using a bundler like webpack/Vite.
+const SUPABASE_URL = process.env.SUPABASE_URL; // Set in your .env file
+const SUPABASE_KEY = process.env.SUPABASE_KEY; // Public anon key for client usage only
 
-// Properly initialize Supabase client
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 console.log('Supabase client initialized:', supabase);
 
