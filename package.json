@@ -4,7 +4,7 @@
   "description": "Inventory Management System using Supabase",
   "main": "supa/index.html",
   "scripts": {
-    "start": "http-server -c-1"
+    "start": "node server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.0.0",
