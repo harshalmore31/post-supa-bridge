@@ -572,10 +572,9 @@
     </div>
 
     <script>
-// Retrieve Supabase configuration from environment variables injected during build.
-// Note: process.env is available when using a bundler like webpack/Vite.
-const SUPABASE_URL = process.env.SUPABASE_URL; // Set in your .env file
-const SUPABASE_KEY = process.env.SUPABASE_KEY; // Public anon key for client usage only
+// Retrieve Supabase configuration from Vercel’s environment variables (for example, when using Next.js)
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL; // Set in Vercel environment
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_KEY; // Public anon key for client usage only
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 console.log('Supabase client initialized:', supabase);
