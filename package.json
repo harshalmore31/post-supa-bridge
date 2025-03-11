@@ -1,7 +1,18 @@
 {
+  "name": "post-supa-bridge",
+  "version": "1.0.0",
+  "description": "Inventory Management System using Supabase",
+  "main": "supa/index.html",
+  "scripts": {
+    "start": "http-server -c-1"
+  },
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.1",
+    "@supabase/supabase-js": "^2.0.0",
     "dotenv": "^16.4.7",
     "dotenv-webpack": "^8.1.0"
-  }
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "license": "ISC"
 }
