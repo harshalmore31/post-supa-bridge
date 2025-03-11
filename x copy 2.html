@@ -6,47 +6,49 @@
     <title>Inventory Management System</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        /* Improved Color Palette (more accessible contrast) */
         :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --accent: #4895ef;
+            --primary: #007bff;        /* A more standard blue */
+            --secondary: #6c757d;
+            --accent: #17a2b8;
             --background: #f8f9fa;
-            --card: #ffffff;
-            --text: #212529;
+            --card: #fff;
+            --text: #343a40;
             --text-light: #6c757d;
-            --danger: #e63946;
-            --success: #2a9d8f;
-            --warning: #f4a261;
-            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --danger: #dc3545;
+            --success: #28a745;
+            --warning: #ffc107;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  /* Subtle shadow */
         }
 
         body {
+            font-family: 'Roboto', sans-serif;  /* A more readable font */
             background-color: var(--background);
             color: var(--text);
             line-height: 1.6;
+            margin: 0;
+            padding: 0;
         }
 
+        /* More flexible container */
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            max-width: 1400px;  /* Wider layout */
+            margin: 20px auto; /* Add some top/bottom margin */
             padding: 20px;
         }
 
         header {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: auto 1fr auto;  /* Flexible header layout */
             align-items: center;
-            padding: 20px 0;
-            margin-bottom: 30px;
-            border-bottom: 1px solid #e9ecef;
+            gap: 20px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
         }
 
         .logo {
@@ -56,114 +58,103 @@
         }
 
         .logo i {
-            font-size: 24px;
+            font-size: 28px;  /* Larger logo icon */
             color: var(--primary);
         }
 
         .logo h1 {
-            font-size: 24px;
-            font-weight: 600;
+            font-size: 28px;  /* Larger logo text */
+            font-weight: 500; /* Slightly lighter font weight */
         }
 
         .search-container {
-            flex: 1;
-            margin: 0 20px;
             position: relative;
         }
 
         .search-container input {
             width: 100%;
-            padding: 10px 15px;
-            border-radius: 30px;
+            padding: 12px 40px 12px 20px; /* Adjust padding */
             border: 1px solid #ced4da;
+            border-radius: 5px;  /* Softer border radius */
             font-size: 16px;
-            transition: all 0.3s;
-            padding-left: 40px;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
 
         .search-container input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Standard blue shadow */
         }
 
         .search-container i {
             position: absolute;
-            left: 15px;
-            top: 12px;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
             color: var(--text-light);
         }
 
         .status-indicator {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px; /* Reduce gap */
             font-size: 14px;
             color: var(--text-light);
         }
 
         .status-indicator .dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;  /* Slightly larger dot */
+            height: 12px;
             border-radius: 50%;
-            background-color: var(--success);
         }
 
-        .status-indicator .dot.offline {
-            background-color: var(--danger);
-        }
-
+        /* Stats Section */
         .stats-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* More consistent size */
             gap: 20px;
             margin-bottom: 30px;
         }
 
         .stat-card {
             background-color: var(--card);
-            border-radius: 15px; /* increased radius for modern look */
-            padding: 25px; /* better spacing */
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); /* refined shadow */
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease-in-out;
         }
 
         .stat-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
         }
 
         .stat-card .stat-title {
-            font-size: 14px;
+            font-size: 16px;  /* Larger title */
             color: var(--text-light);
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
 
         .stat-card .stat-value {
-            font-size: 24px;
+            font-size: 28px; /* Larger value */
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .stat-card .stat-footer {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
             font-size: 14px;
+            color: var(--text-light);
         }
 
-        .stat-card .stat-footer.positive {
-            color: var(--success);
+        .stat-card .stat-footer i {
+            font-size: 16px;  /* Slightly larger footer icon */
         }
 
-        .stat-card .stat-footer.negative {
-            color: var(--danger);
-        }
-
+        /* Inventory Section */
         .inventory-container {
-            margin-top: 20px;
+            margin-top: 30px;
         }
 
         .inventory-header {
@@ -174,8 +165,8 @@
         }
 
         .inventory-title {
-            font-size: 20px;
-            font-weight: 600;
+            font-size: 24px; /* Larger title */
+            font-weight: 500;
         }
 
         .filter-options {
@@ -184,40 +175,43 @@
         }
 
         .filter-btn {
-            padding: 8px 15px;
+            padding: 10px 20px; /* More comfortable padding */
             border: 1px solid #ced4da;
-            border-radius: 20px;
+            border-radius: 5px; /* Softened corners */
             background-color: var(--card);
+            color: var(--text);
             cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+            font-size: 15px;
         }
 
-        .filter-btn:hover, .filter-btn.active {
+        .filter-btn:hover,
+        .filter-btn.active {
             background-color: var(--primary);
             color: white;
             border-color: var(--primary);
         }
 
+        /* Inventory Grid */
         .inventory-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Slightly wider */
             gap: 20px;
         }
 
+        /* Product Card */
         .product-card {
             background-color: var(--card);
-            border-radius: 15px; /* enhanced rounded corners */
-            border: 1px solid #eaeaea; /* subtle border for separation */
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease-in-out;
             position: relative;
         }
 
         .product-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);  /* Stronger hover shadow */
         }
 
         .product-header {
@@ -225,11 +219,11 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            border-bottom: 1px solid #f1f1f1;
+            border-bottom: 1px solid #eee;
         }
 
         .product-title {
-            font-weight: 600;
+            font-weight: 500;
             font-size: 18px;
             margin-bottom: 5px;
         }
@@ -241,19 +235,20 @@
 
         .product-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
         .action-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            border-radius: 5px; /* Softened corners */
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
             background-color: #f8f9fa;
+            color: var(--text-light);
         }
 
         .action-btn:hover {
@@ -268,7 +263,7 @@
         .product-info {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .info-label {
@@ -283,14 +278,14 @@
         .stock-status {
             display: flex;
             align-items: center;
-            gap: 5px;
-            margin-top: 15px;
+            gap: 6px;
+            margin-top: 12px;
             font-size: 14px;
         }
 
         .stock-indicator {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
         }
 
@@ -310,21 +305,21 @@
         }
 
         .stock-bar {
-            height: 6px;
+            height: 8px;
             width: 100%;
             background-color: #e9ecef;
-            border-radius: 3px;
-            margin-top: 5px;
+            border-radius: 4px;
+            margin-top: 6px;
             overflow: hidden;
         }
 
         .stock-fill {
             height: 100%;
-            background-color: var(--success);
-            border-radius: 3px;
-            transition: width 0.5s ease;
+            border-radius: 4px;
+            transition: width 0.3s ease-in-out; /* Reduced transition time */
         }
 
+        /* Notification */
         .notification {
             position: fixed;
             bottom: 20px;
@@ -338,7 +333,7 @@
             align-items: center;
             gap: 10px;
             transform: translateX(calc(100% + 20px));
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease-in-out;
             z-index: 1000;
         }
 
@@ -370,14 +365,14 @@
             cursor: pointer;
         }
 
+        /* Loading Spinner */
         .loading-spinner {
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            border: 3px solid rgba(67, 97, 238, 0.2);
+            border: 4px solid rgba(0, 123, 255, 0.2);
             border-top-color: var(--primary);
-            animation: spin 1s infinite linear;
-            margin: 20px auto;
+            animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
@@ -399,40 +394,48 @@
             color: var(--text-light);
         }
 
+        /* Update Pulse Animation */
         .update-pulse {
-            animation: pulse 1s;
+            animation: pulse 0.8s ease-in-out; /* Slightly faster */
         }
 
         @keyframes pulse {
             0% {
-                box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.5);
+                box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4); /* Standard blue pulse */
             }
             70% {
-                box-shadow: 0 0 0 10px rgba(67, 97, 238, 0);
+                box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
             }
             100% {
-                box-shadow: 0 0 0 0 rgba(67, 97, 238, 0);
+                box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
             }
         }
 
+        /* Connection Lost */
         .connection-lost {
             text-align: center;
             padding: 20px;
             color: var(--danger);
-            background-color: rgba(230, 57, 70, 0.1);
-            border-radius: 10px;
+            background-color: rgba(220, 53, 69, 0.1); /* Standard red tint */
+            border-radius: 8px;
             margin: 20px 0;
         }
 
+        /* Fade-in */
         .fade-in {
-            animation: fadeIn 0.5s;
+            animation: fadeIn 0.3s ease-in-out; /* Faster fade */
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
         }
 
+        /* Empty State */
         .empty-state {
             text-align: center;
             padding: 40px 20px;
@@ -440,47 +443,45 @@
         }
 
         .empty-state i {
-            font-size: 48px;
+            font-size: 56px;
             margin-bottom: 20px;
             color: #e9ecef;
         }
 
         .empty-state h3 {
-            font-size: 20px;
+            font-size: 22px;
             margin-bottom: 10px;
         }
 
         .empty-state p {
-            font-size: 14px;
-            max-width: 400px;
+            font-size: 15px;
+            max-width: 450px;
             margin: 0 auto;
         }
 
-        /* Responsive adjustments */
+        /* Responsive Adjustments (More Concise) */
         @media (max-width: 768px) {
-            .stats-container {
-                grid-template-columns: 1fr;
-            }
-
-            .inventory-grid {
-                grid-template-columns: 1fr;
-            }
-
             header {
-                flex-direction: column;
-                gap: 15px;
+                grid-template-columns: 1fr; /* Stack header elements */
+                text-align: center;
             }
 
             .search-container {
-                margin: 15px 0;
-                width: 100%;
+                margin: 10px 0;
             }
 
             .filter-options {
                 overflow-x: auto;
                 padding-bottom: 10px;
                 white-space: nowrap;
-                width: 100%;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr; /* Stack stats cards */
+            }
+
+            .inventory-grid {
+                grid-template-columns: 1fr; /* Stack inventory cards */
             }
         }
     </style>
@@ -605,18 +606,18 @@ async function initApp() {
         console.log('Initializing app...');
         // Set initial UI state
         updateConnectionStatus(false);
-        
+
         // Fetch initial data
         console.log('Fetching inventory data...');
         await fetchInventoryData();
-        
+
         // Set up real-time subscription
         console.log('Setting up real-time subscription...');
         setupRealtimeSubscription();
-        
+
         // Set up event listeners
         setupEventListeners();
-        
+
         console.log('App initialization complete');
     } catch (error) {
         console.error('Error initializing app:', error);
@@ -630,18 +631,18 @@ async function initApp() {
 async function fetchInventoryData() {
     try {
         console.log('Fetching data from Supabase...');
-        
+
         const { data, error } = await supabase
             .from('items')
             .select('*');
-        
+
         console.log('Supabase response:', { data, error });
-        
+
         if (error) {
             console.error('Supabase error:', error);
             throw error;
         }
-        
+
         if (data && data.length > 0) {
             console.log('Data received from Supabase:', data);
             // Process data to ensure correct types
@@ -652,19 +653,19 @@ async function fetchInventoryData() {
             console.log('No data returned from Supabase');
             throw new Error('No data returned from database');
         }
-        
+
         console.log('Inventory items:', inventoryItems);
-        
+
         // Update UI
         updateInventoryUI();
         updateStats();
-        
+
         // Hide loader
         loader.style.display = 'none';
-        
+
         // Show notification
         showNotification('Data Loaded', `${inventoryItems.length} items loaded successfully.`);
-        
+
         // Update last updated time
         updateLastUpdated();
     } catch (error) {
@@ -675,14 +676,14 @@ async function fetchInventoryData() {
             details: error.details,
             hint: error.hint
         });
-        
+
         showNotification('Connection Error', 'Could not connect to inventory database.');
-        
+
         // Show connection error UI instead of sample data
         isConnected = false;
         updateConnectionStatus(false);
         showConnectionErrorUI();
-        
+
         // Hide loader
         loader.style.display = 'none';
     }
@@ -698,13 +699,13 @@ function showConnectionErrorUI() {
             <button id="retry-connection" class="retry-btn">Retry Connection</button>
         </div>
     `;
-    
+
     // Add retry button event listener
     document.getElementById('retry-connection')?.addEventListener('click', () => {
         loader.style.display = 'block';
         fetchInventoryData();
     });
-    
+
     // Clear stats when disconnected
     totalProductsElement.textContent = '0';
     totalValueElement.textContent = '$0.00';
@@ -717,12 +718,12 @@ function setupRealtimeSubscription() {
         console.log('Setting up Supabase channel');
         const channel = supabase
             .channel('items-changes')
-            .on('postgres_changes', 
+            .on('postgres_changes',
                 {
                     event: '*',
                     schema: 'public',
                     table: 'items'
-                }, 
+                },
                 handleRealtimeChange
             )
             .subscribe((status) => {
@@ -731,7 +732,7 @@ function setupRealtimeSubscription() {
                 updateConnectionStatus(connected);
                 isConnected = connected;
             });
-        
+
         console.log('Channel setup complete:', channel);
     } catch (error) {
         console.error('Error setting up realtime subscription:', error);
@@ -743,18 +744,18 @@ function setupRealtimeSubscription() {
 // Handle real-time changes from Supabase
 function handleRealtimeChange(payload) {
     console.log('Real-time change detected:', payload);
-    
+
     // Only process changes if we're connected
     if (!isConnected) return;
-    
+
     // Update last updated time
     updateLastUpdated();
-    
+
     const { eventType, new: newRecord, old: oldRecord } = payload;
-    
+
     // Fix types for the real-time change payload
     let processedRecord;
-    
+
     switch (eventType) {
         case 'INSERT':
             processedRecord = processRecord(newRecord);
@@ -779,29 +780,29 @@ function handleRealtimeChange(payload) {
 // Process record to ensure correct data types
 function processRecord(record) {
     if (!record) return null;
+
     return {
         ...record,
         item_id: parseInt(record.item_id, 10) || 0,
         'stock on hand': parseInt(record['stock on hand'], 10) || 0,
         name: String(record.name || ''),
-        sku: String(record.sku || '').replace(/[()]/g, ''), // remove parentheses, e.g. (LP1001) -> LP1001
-        // Parse the rate and purchase rate directly without extra division
-        rate: parseFloat(String(record.rate || '0').replace(/[^0-9.]/g, '')) || 0,
-        'purchase rate': parseFloat(String(record['purchase rate'] || '0').replace(/[^0-9.]/g, '')) || 0
+        sku: String(record.sku || ''),
+        rate: String(record.rate || '0'),
+        'purchase rate': String(record['purchase rate'] || '0')
     };
 }
 
 // Handle item insertion
 function handleInsert(newItem) {
     if (!isConnected || !newItem) return;
-    
+
     // Add new item to inventory
     inventoryItems.push(newItem);
-    
+
     // Update UI
     updateInventoryUI();
     updateStats();
-    
+
     // Show notification
     showNotification('Item Added', `${newItem.name} has been added to inventory.`);
 }
@@ -809,12 +810,12 @@ function handleInsert(newItem) {
 // Handle item update
 function handleUpdate(updatedItem) {
     if (!isConnected || !updatedItem) return;
-    
+
     // Find and update the item
     const index = inventoryItems.findIndex(item => item.item_id === updatedItem.item_id);
     if (index !== -1) {
         inventoryItems[index] = updatedItem;
-        
+
         // Highlight the updated card
         const card = document.getElementById(`product-${updatedItem.item_id}`);
         if (card) {
@@ -824,11 +825,11 @@ function handleUpdate(updatedItem) {
             }, 1000);
         }
     }
-        
+
     // Update UI
     updateInventoryUI();
     updateStats();
-    
+
     // Show notification
     showNotification('Item Updated', `${updatedItem.name} has been updated.`);
 }
@@ -836,13 +837,13 @@ function handleUpdate(updatedItem) {
 // Handle item deletion
 function handleDelete(deletedItem) {
     if (!isConnected || !deletedItem) return;
-    
+
     // Ensure item_id is an integer
     const itemId = parseInt(deletedItem.item_id, 10);
-    
+
     // Remove the item from inventory
     inventoryItems = inventoryItems.filter(item => item.item_id !== itemId);
-    
+
     // Find and remove the card with animation
     const card = document.getElementById(`product-${itemId}`);
     if (card) {
@@ -854,10 +855,10 @@ function handleDelete(deletedItem) {
     } else {
         updateInventoryUI();
     }
-    
+
     // Update stats
     updateStats();
-    
+
     // Show notification
     showNotification('Item Removed', `${deletedItem.name || 'Item'} has been removed from inventory.`);
 }
@@ -875,20 +876,20 @@ function setupEventListeners() {
         searchTerm = e.target.value.toLowerCase();
         updateInventoryUI();
     });
-    
+
     // Filter buttons
     filterButtons.forEach(button => {
         button.addEventListener('click', () => {
             // Update active button styling
             filterButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            
+
             // Apply filter
             currentFilter = button.getAttribute('data-filter');
             updateInventoryUI();
         });
     });
-    
+
     // Close notification button
     document.getElementById('close-notification')?.addEventListener('click', closeNotification);
 }
@@ -896,32 +897,32 @@ function setupEventListeners() {
 // Update the inventory UI based on current filters and search
 function updateInventoryUI() {
     console.log('Updating inventory UI with filter:', currentFilter, 'and search term:', searchTerm);
-    
+
     // If not connected, show error UI
     if (!isConnected) {
         showConnectionErrorUI();
         return;
     }
-    
+
     // Apply filters and search
     filteredItems = inventoryItems.filter(item => {
         // Apply search filter
-        const matchesSearch = 
-            item.name.toLowerCase().includes(searchTerm) || 
+        const matchesSearch =
+            item.name.toLowerCase().includes(searchTerm) ||
             (item.sku && item.sku.toLowerCase().includes(searchTerm));
-        
+
         // Apply stock level filter
         if (currentFilter === 'all') return matchesSearch;
-        
+
         const stockLevel = getStockLevel(item['stock on hand']);
         return stockLevel === currentFilter && matchesSearch;
     });
-    
+
     console.log('Filtered items count:', filteredItems.length);
-    
+
     // Clear current items
     inventoryGrid.innerHTML = '';
-    
+
     // Check if we have any items to display
     if (filteredItems.length === 0) {
         console.log('No items to display');
@@ -934,13 +935,13 @@ function updateInventoryUI() {
         `;
         return;
     }
-    
+
     // Create product cards
     filteredItems.forEach(item => {
         const card = createProductCard(item);
         inventoryGrid.appendChild(card);
     });
-    
+
     console.log('UI updated with', filteredItems.length, 'items');
 }
 
@@ -950,16 +951,16 @@ function createProductCard(item) {
     const stockOnHand = parseInt(item['stock on hand'], 10) || 0;
     const stockLevel = getStockLevel(stockOnHand);
     const stockPercent = Math.min(stockOnHand / 100 * 100, 100); // Scale stock for visual bar
-    
+
     // Properly parse rate values to avoid NaN
     const sellingRate = parseFloat(item.rate) || 0;
     const purchaseRate = parseFloat(item['purchase rate']) || 0;
     const profitMargin = calculateProfitMargin(sellingRate, purchaseRate);
-    
+
     const card = document.createElement('div');
     card.className = 'product-card fade-in';
     card.id = `product-${item.item_id}`;
-    
+
     card.innerHTML = `
         <div class="product-header">
             <div>
@@ -967,18 +968,18 @@ function createProductCard(item) {
                 <div class="product-sku">SKU: ${item.sku || 'No SKU'}</div>
             </div>
             <div class="product-actions">
-                <div class="action-btn"><i class="fas fa-edit"></i></div>
-                <div class="action-btn"><i class="fas fa-trash-alt"></i></div>
+                <div class="action-btn edit-btn" data-item-id="${item.item_id}"><i class="fas fa-edit"></i></div>
+                <div class="action-btn delete-btn" data-item-id="${item.item_id}"><i class="fas fa-trash-alt"></i></div>
             </div>
         </div>
         <div class="product-body">
             <div class="product-info">
                 <div class="info-label">Selling Price</div>
-                <div class="info-value">Rs.${sellingRate.toFixed(2)}</div>
+                <div class="info-value">$${sellingRate.toFixed(2)}</div>
             </div>
             <div class="product-info">
                 <div class="info-label">Purchase Price</div>
-                <div class="info-value">Rs.${purchaseRate.toFixed(2)}</div>
+                <div class="info-value">$${purchaseRate.toFixed(2)}</div>
             </div>
             <div class="product-info">
                 <div class="info-label">Profit Margin</div>
@@ -997,8 +998,50 @@ function createProductCard(item) {
             </div>
         </div>
     `;
-    
+
+  // Add event listeners to edit and delete buttons
+  const editButton = card.querySelector('.edit-btn');
+  editButton.addEventListener('click', () => {
+      // Handle edit action (e.g., open a modal for editing)
+      console.log('Edit button clicked for item ID:', item.item_id);
+      // Add your edit functionality here
+  });
+
+  const deleteButton = card.querySelector('.delete-btn');
+  deleteButton.addEventListener('click', async () => {
+      // Disable the delete button and change the icon
+      deleteButton.disabled = true;
+      deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+
+      try {
+      // Call your delete function (e.g., deleteItem)
+      await deleteItem(item.item_id);
+  } catch (error) {
+      console.error('Error deleting item:', error);
+      // Re-enable the button and show the error
+      deleteButton.disabled = false;
+      deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+      alert('Failed to delete item. Please try again.');
+  }
+});
+
     return card;
+}
+
+async function deleteItem(itemId) {
+    try {
+        const { error } = await supabase
+            .from('items')
+            .delete()
+            .eq('item_id', itemId);
+
+        if (error) {
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error deleting item:', error);
+        throw error; // Re-throw the error to be caught by the caller
+    }
 }
 
 // Calculate profit margin percentage
@@ -1006,9 +1049,9 @@ function calculateProfitMargin(sellingPrice, purchasePrice) {
     // Ensure we're working with numbers
     const sp = parseFloat(sellingPrice) || 0;
     const pp = parseFloat(purchasePrice) || 0;
-    
+
     if (isNaN(sp) || isNaN(pp) || sp === 0) return '0.00';
-    
+
     const margin = ((sp - pp) / sp * 100);
     return margin.toFixed(2);
 }
@@ -1025,17 +1068,17 @@ function getStockLevel(stockQuantity) {
 // Update statistics section
 function updateStats() {
     console.log('Updating statistics...');
-    
+
     if (!isConnected) {
         totalProductsElement.textContent = '0';
         totalValueElement.textContent = '$0.00';
         lowStockElement.textContent = '0';
         return;
     }
-    
+
     // Total products
     totalProductsElement.textContent = inventoryItems.length;
-    
+
     // Total stock value
     const totalValue = inventoryItems.reduce((sum, item) => {
         // Ensure correct types for calculation
@@ -1043,15 +1086,15 @@ function updateStats() {
         const stock = parseInt(item['stock on hand'], 10) || 0;
         return sum + (rate * stock);
     }, 0);
-    totalValueElement.textContent = `Rs.${totalValue.toFixed(2)}`;
-    
+    totalValueElement.textContent = `$${totalValue.toFixed(2)}`;
+
     // Low stock items
     const lowStockCount = inventoryItems.filter(item => {
         const stock = parseInt(item['stock on hand'], 10) || 0;
         return getStockLevel(stock) === 'low';
     }).length;
     lowStockElement.textContent = lowStockCount;
-    
+
     console.log('Statistics updated:', {
         totalProducts: inventoryItems.length,
         totalValue: totalValue.toFixed(2),
@@ -1071,12 +1114,12 @@ function showNotification(title, message) {
     const notification = document.getElementById('notification');
     const notificationTitle = document.getElementById('notification-title');
     const notificationMessage = document.getElementById('notification-message');
-    
+
     notificationTitle.textContent = title;
     notificationMessage.textContent = message;
-    
+
     notification.classList.add('show');
-    
+
     // Auto-hide after 5 seconds
     setTimeout(() => {
         closeNotification();
