@@ -513,9 +513,9 @@
             </div>
             <div class="stat-card">
                 <div class="stat-title">Total Stock Value</div>
-                <div class="stat-value" id="total-value">$0.00</div>
+                <div class="stat-value" id="total-value">Rs.0.00</div>
                 <div class="stat-footer">
-                    <i class="fas fa-dollar-sign"></i>
+                    <i class="fas fa-rupee-sign"></i>
                     <span>Current value</span>
                 </div>
             </div>
@@ -945,6 +945,36 @@ function updateInventoryUI() {
 }
 
 // Create a product card element
+// Updated processRecord function to properly handle INR values
+function processRecord(record) {
+    if (!record) return null;
+    return {
+        ...record,
+        item_id: parseInt(record.item_id, 10) || 0,
+        'stock on hand': parseInt(record['stock on hand'], 10) || 0,
+        name: String(record.name || ''),
+        sku: String(record.sku || '').replace(/[()]/g, ''), // remove parentheses, e.g. (LP1001) -> LP1001
+        // Improved parsing for INR currency values
+        rate: parseCurrencyValue(record.rate),
+        'purchase rate': parseCurrencyValue(record['purchase rate'])
+    };
+}
+
+// Function to properly parse INR currency values
+function parseCurrencyValue(value) {
+    if (!value) return 0;
+    
+    // Convert to string if it's not already
+    const strValue = String(value);
+    
+    // Remove "Rs." prefix and any commas
+    const numericString = strValue.replace(/Rs\.|,/g, '');
+    
+    // Parse as float
+    return parseFloat(numericString) || 0;
+}
+
+// Updated createProductCard function with proper currency formatting
 function createProductCard(item) {
     // Ensure correct types when creating cards
     const stockOnHand = parseInt(item['stock on hand'], 10) || 0;
@@ -974,11 +1004,11 @@ function createProductCard(item) {
         <div class="product-body">
             <div class="product-info">
                 <div class="info-label">Selling Price</div>
-                <div class="info-value">Rs.${sellingRate.toFixed(2)}</div>
+                <div class="info-value">Rs.${formatIndianCurrency(sellingRate)}</div>
             </div>
             <div class="product-info">
                 <div class="info-label">Purchase Price</div>
-                <div class="info-value">Rs.${purchaseRate.toFixed(2)}</div>
+                <div class="info-value">Rs.${formatIndianCurrency(purchaseRate)}</div>
             </div>
             <div class="product-info">
                 <div class="info-label">Profit Margin</div>
@@ -999,6 +1029,76 @@ function createProductCard(item) {
     `;
     
     return card;
+}
+
+// Updated updateStats function to properly format total value
+function updateStats() {
+    console.log('Updating statistics...');
+    
+    if (!isConnected) {
+        totalProductsElement.textContent = '0';
+        totalValueElement.textContent = 'Rs.0.00';
+        lowStockElement.textContent = '0';
+        return;
+    }
+    
+    // Total products
+    totalProductsElement.textContent = inventoryItems.length;
+    
+    // Total stock value
+    const totalValue = inventoryItems.reduce((sum, item) => {
+        // Ensure correct types for calculation
+        const rate = parseFloat(item.rate) || 0;
+        const stock = parseInt(item['stock on hand'], 10) || 0;
+        return sum + (rate * stock);
+    }, 0);
+    totalValueElement.textContent = `Rs.${formatIndianCurrency(totalValue)}`;
+    
+    // Low stock items
+    const lowStockCount = inventoryItems.filter(item => {
+        const stock = parseInt(item['stock on hand'], 10) || 0;
+        return getStockLevel(stock) === 'low';
+    }).length;
+    lowStockElement.textContent = lowStockCount;
+    
+    console.log('Statistics updated:', {
+        totalProducts: inventoryItems.length,
+        totalValue: formatIndianCurrency(totalValue),
+        lowStockCount
+    });
+}
+
+// New function to format numbers in Indian currency format (with commas)
+function formatIndianCurrency(value) {
+    // Ensure value is a number
+    const num = typeof value === 'number' ? value : parseFloat(value) || 0;
+    
+    // Convert to string with 2 decimal places
+    const numStr = num.toFixed(2);
+    
+    // Split into whole and decimal parts
+    const [whole, decimal] = numStr.split('.');
+    
+    // Format whole part with commas for Indian number system
+    // (Example: 1,00,000.00 instead of 100,000.00)
+    let formattedWhole = '';
+    
+    // Handle first part (special case for Indian format)
+    if (whole.length > 3) {
+        formattedWhole = whole.slice(0, whole.length - 3) + ',' + whole.slice(whole.length - 3);
+        
+        // Now add commas every 2 digits for the leftmost part
+        let i = formattedWhole.indexOf(',') - 2;
+        while (i > 0) {
+            formattedWhole = formattedWhole.slice(0, i) + ',' + formattedWhole.slice(i);
+            i -= 2;
+        }
+    } else {
+        formattedWhole = whole;
+    }
+    
+    // Combine whole and decimal parts
+    return `${formattedWhole}.${decimal}`;
 }
 
 // Calculate profit margin percentage
@@ -1023,41 +1123,41 @@ function getStockLevel(stockQuantity) {
 }
 
 // Update statistics section
-function updateStats() {
-    console.log('Updating statistics...');
+// function updateStats() {
+//     console.log('Updating statistics...');
     
-    if (!isConnected) {
-        totalProductsElement.textContent = '0';
-        totalValueElement.textContent = '$0.00';
-        lowStockElement.textContent = '0';
-        return;
-    }
+//     if (!isConnected) {
+//         totalProductsElement.textContent = '0';
+//         totalValueElement.textContent = 'Rs.0.00';
+//         lowStockElement.textContent = '0';
+//         return;
+//     }
     
-    // Total products
-    totalProductsElement.textContent = inventoryItems.length;
+//     // Total products
+//     totalProductsElement.textContent = inventoryItems.length;
     
-    // Total stock value
-    const totalValue = inventoryItems.reduce((sum, item) => {
-        // Ensure correct types for calculation
-        const rate = parseFloat(item.rate) || 0;
-        const stock = parseInt(item['stock on hand'], 10) || 0;
-        return sum + (rate * stock);
-    }, 0);
-    totalValueElement.textContent = `Rs.${totalValue.toFixed(2)}`;
+//     // Total stock value
+//     const totalValue = inventoryItems.reduce((sum, item) => {
+//         // Ensure correct types for calculation
+//         const rate = parseFloat(item.rate) || 0;
+//         const stock = parseInt(item['stock on hand'], 10) || 0;
+//         return sum + (rate * stock);
+//     }, 0);
+//     totalValueElement.textContent = `Rs.${totalValue.toFixed(2)}`;
     
-    // Low stock items
-    const lowStockCount = inventoryItems.filter(item => {
-        const stock = parseInt(item['stock on hand'], 10) || 0;
-        return getStockLevel(stock) === 'low';
-    }).length;
-    lowStockElement.textContent = lowStockCount;
+//     // Low stock items
+//     const lowStockCount = inventoryItems.filter(item => {
+//         const stock = parseInt(item['stock on hand'], 10) || 0;
+//         return getStockLevel(stock) === 'low';
+//     }).length;
+//     lowStockElement.textContent = lowStockCount;
     
-    console.log('Statistics updated:', {
-        totalProducts: inventoryItems.length,
-        totalValue: totalValue.toFixed(2),
-        lowStockCount
-    });
-}
+//     console.log('Statistics updated:', {
+//         totalProducts: inventoryItems.length,
+//         totalValue: totalValue.toFixed(2),
+//         lowStockCount
+//     });
+// }
 
 // Update last updated timestamp
 function updateLastUpdated() {
