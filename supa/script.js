@@ -425,10 +425,7 @@ function createProductCard(item) {
                 <div class="product-title">${item.name || 'Unnamed Product'}</div>
                 <div class="product-sku">SKU: ${item.sku || 'No SKU'}</div>
             </div>
-            <div class="product-actions">
-                <div class="action-btn"><i class="fas fa-edit"></i></div>
-                <div class="action-btn"><i class="fas fa-trash-alt"></i></div>
-            </div>
+
         </div>
         <div class="product-body">
             <div class="product-info">

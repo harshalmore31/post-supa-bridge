@@ -3,16 +3,12 @@ from flask_cors import CORS
 from flask_socketio import SocketIO
 from dotenv import load_dotenv
 import database_operations as db
-
-# Load environment variables
 load_dotenv()
 
-# Flask app initialization
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app) 
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# --- API Routes ---
 @app.route('/api/items', methods=['GET'])
 def get_items():
     """API endpoint to get all items"""
@@ -36,7 +32,6 @@ def create_item():
     
     item = db.insert_item(data)
     if item:
-        # Emit WebSocket event
         socketio.emit('item_update', {'operation': 'INSERT', 'item': item})
         return jsonify(item), 201
     return jsonify({"error": "Failed to create item"}), 500
@@ -50,7 +45,6 @@ def update_item_endpoint(item_id):
     
     updated_item = db.update_item(item_id, data)
     if updated_item:
-        # Emit WebSocket event
         socketio.emit('item_update', {'operation': 'UPDATE', 'item': updated_item})
         return jsonify(updated_item)
     return jsonify({"error": "Item not found or update failed"}), 404
@@ -60,7 +54,6 @@ def delete_item_endpoint(item_id):
     """API endpoint to delete an item"""
     success = db.delete_item(item_id)
     if success:
-        # Emit WebSocket event
         socketio.emit('item_update', {'operation': 'DELETE', 'item_id': item_id})
         return jsonify({"success": True})
     return jsonify({"error": "Item not found or delete failed"}), 404
