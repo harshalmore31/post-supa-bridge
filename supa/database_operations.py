@@ -6,6 +6,8 @@ import threading
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from flask_socketio import SocketIO
+from dotenv import load_dotenv
+
 
 # Load environment variables
 load_dotenv()
@@ -24,6 +26,7 @@ def get_postgres_connection():
         user="postgres",
         password=""
     )
+    
 
 # Core CRUD operations
 def get_all_items():
