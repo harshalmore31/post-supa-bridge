@@ -114,9 +114,9 @@
 
         .stat-card {
             background-color: var(--card);
-            border-radius: 15px; /* increased radius for modern look */
-            padding: 25px; /* better spacing */
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); /* refined shadow */
+            border-radius: 15px; 
+            padding: 25px; 
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); 
             display: flex;
             flex-direction: column;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -199,8 +199,8 @@
 
         .product-card {
             background-color: var(--card);
-            border-radius: 15px; /* enhanced rounded corners */
-            border: 1px solid #eaeaea; /* subtle border for separation */
+            border-radius: 15px; 
+            border: 1px solid #eaeaea;
             overflow: hidden;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -447,8 +447,6 @@
             max-width: 400px;
             margin: 0 auto;
         }
-
-        /* Responsive adjustments */
         @media (max-width: 768px) {
             .stats-container {
                 grid-template-columns: 1fr;
