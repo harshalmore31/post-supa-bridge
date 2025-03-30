@@ -1,12 +1,14 @@
-const SUPABASE_URL = "https://dlebjzecztdyvlmnpkio.supabase.co"; 
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZWJqemVjenRkeXZsbW5wa2lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE2NzUzMjYsImV4cCI6MjA1NzI1MTMyNn0.juYgH2QhcR7mHDbUtNSLtupkAaSRbTXc-qJVdcrgzoc"; 
+const SUPABASE_URL = "https://dlebjzecztdyvlmnpkio.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZWJqemVjenRkeXZsbW5wa2lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE2NzUzMjYsImV4cCI6MjA1NzI1MTMyNn0.juYgH2QhcR7mHDbUtNSLtupkAaSRbTXc-qJVdcrgzoc";
+
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-console.log('Supabase client initialized:', supabase);
 let inventoryItems = [];
 let filteredItems = [];
 let currentFilter = 'all';
 let searchTerm = '';
 let isConnected = false;
+
+// DOM Elements
 const inventoryGrid = document.getElementById('inventory-grid');
 const loader = document.getElementById('loader');
 const totalProductsElement = document.getElementById('total-products');
@@ -17,17 +19,13 @@ const connectionStatus = document.getElementById('connection-status');
 const statusText = document.getElementById('status-text');
 const searchInput = document.getElementById('search-input');
 const filterButtons = document.querySelectorAll('.filter-btn');
+
 async function initApp() {
     try {
-        console.log('Initializing app...');
         updateConnectionStatus(false);
-        console.log('Fetching inventory data...');
         await fetchInventoryData();
-        console.log('Setting up real-time subscription...');
         setupRealtimeSubscription();
         setupEventListeners();
-        
-        console.log('App initialization complete');
     } catch (error) {
         console.error('Error initializing app:', error);
         showNotification('Error', 'Failed to initialize the application. Please refresh the page.');
@@ -281,56 +279,68 @@ function parseCurrencyValue(value) {
     return parseFloat(numericString) || 0;
 }
 
+// ... (keep all your existing functions until createProductCard) ...
+
 function createProductCard(item) {
     const stockOnHand = parseInt(item['stock on hand'], 10) || 0;
     const stockLevel = getStockLevel(stockOnHand);
-    const stockPercent = Math.min(stockOnHand / 100 * 100, 100); 
+    const stockPercent = Math.min(stockOnHand / 100 * 100, 100);
     const sellingRate = parseFloat(item.rate) || 0;
     const purchaseRate = parseFloat(item['purchase rate']) || 0;
     const profitMargin = calculateProfitMargin(sellingRate, purchaseRate);
+    const profitLevel = profitMargin > 30 ? 'high' : profitMargin > 15 ? 'medium' : 'low';
+    
     const card = document.createElement('div');
     card.className = 'product-card fade-in';
     card.id = `product-${item.item_id}`;
+    
     card.innerHTML = `
         <div class="product-header">
-            <div>
+            <div class="product-header-content">
                 <div class="product-title">${item.name || 'Unnamed Product'}</div>
-                <div class="product-sku">SKU: ${item.sku || 'No SKU'}</div>
+                <div class="product-sku">${item.sku || 'No SKU'}</div>
             </div>
-            <div class="product-actions">
-                <div class="action-btn"><i class="fas fa-edit"></i></div>
-                <div class="action-btn"><i class="fas fa-trash-alt"></i></div>
+            <div class="status-indicator status-${stockLevel}">
+                <div class="stock-indicator stock-${stockLevel}"></div>
+                ${stockLevel.charAt(0).toUpperCase() + stockLevel.slice(1)}
             </div>
         </div>
         <div class="product-body">
-            <div class="product-info">
-                <div class="info-label">Selling Price</div>
-                <div class="info-value">Rs.${formatIndianCurrency(sellingRate)}</div>
+            <div>
+                <div class="product-info">
+                    <div class="info-label">Selling Price</div>
+                    <div class="info-value price-highlight">Rs.${formatIndianCurrency(sellingRate)}</div>
+                </div>
+                <div class="product-info">
+                    <div class="info-label">Purchase Price</div>
+                    <div class="info-value">Rs.${formatIndianCurrency(purchaseRate)}</div>
+                </div>
+                <div class="product-info">
+                    <div class="info-label">Profit Margin</div>
+                    <div class="info-value">
+                        ${profitMargin}%
+                        <span class="profit-indicator profit-${profitLevel}">
+                            ${profitLevel.toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+                <div class="product-info">
+                    <div class="info-label">Stock On Hand</div>
+                    <div class="info-value">${stockOnHand} units</div>
+                </div>
             </div>
-            <div class="product-info">
-                <div class="info-label">Purchase Price</div>
-                <div class="info-value">Rs.${formatIndianCurrency(purchaseRate)}</div>
-            </div>
-            <div class="product-info">
-                <div class="info-label">Profit Margin</div>
-                <div class="info-value">${profitMargin}%</div>
-            </div>
-            <div class="product-info">
-                <div class="info-label">Stock</div>
-                <div class="info-value">${stockOnHand} units</div>
-            </div>
-            <div class="stock-status">
-                <div class="stock-indicator stock-${stockLevel}"></div>
-                <span class="stock-${stockLevel}">${stockLevel.charAt(0).toUpperCase() + stockLevel.slice(1)} Stock</span>
-            </div>
-            <div class="stock-bar">
-                <div class="stock-fill" style="width: ${stockPercent}%; background-color: var(--${stockLevel === 'low' ? 'danger' : stockLevel === 'medium' ? 'warning' : 'success'})"></div>
+            <div class="stock-section">
+                <div class="stock-bar">
+                    <div class="stock-fill" style="width: ${stockPercent}%; background-color: var(--${stockLevel === 'low' ? 'danger' : stockLevel === 'medium' ? 'warning' : 'success'})"></div>
+                </div>
             </div>
         </div>
     `;
     
     return card;
-}function updateStats() {
+}
+
+function updateStats() {
     console.log('Updating statistics...');
     if (!isConnected) {
         totalProductsElement.textContent = '0';
