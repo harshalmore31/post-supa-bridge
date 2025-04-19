@@ -1,0 +1,16 @@
+---
+// src/pages/index.astro
+import MainLayout from '../layouts/MainLayout.astro';
+import InventoryDashboard from '../components/InventoryDashboard';
+---
+
+<MainLayout title="Inventory Management System">
+  <InventoryDashboard client:load />
+</MainLayout>
+
+<script>
+  // Client-side notification handler
+  document.getElementById('close-notification')?.addEventListener('click', () => {
+    document.getElementById('notification')?.classList.remove('show');
+  });
+</script>
