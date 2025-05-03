@@ -13,7 +13,7 @@ jobs:
       id-token: write
     defaults:
       run:
-        working-directory: supa-nuxt
+        working-directory: /supa-nuxt
 
     steps:
       - uses: actions/checkout@v4
@@ -42,5 +42,5 @@ jobs:
         uses: nuxt-hub/action@v1
         id: deploy
         with:
-          project-key: post-supa-bridg-eygf
-          directory: supa-nuxt/dist
+          project-key: post-supa-bridg-mpe1
+          directory: /supa-nuxt/dist
