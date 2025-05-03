@@ -260,25 +260,6 @@ function updateInventoryUI() {
     
     console.log('UI updated with', filteredItems.length, 'items');
 }
-function processRecord(record) {
-    if (!record) return null;
-    return {
-        ...record,
-        item_id: parseInt(record.item_id, 10) || 0,
-        'stock on hand': parseInt(record['stock on hand'], 10) || 0,
-        name: String(record.name || ''),
-        sku: String(record.sku || '').replace(/[()]/g, ''), 
-        rate: parseCurrencyValue(record.rate),
-        'purchase rate': parseCurrencyValue(record['purchase rate'])
-    };
-}
-function parseCurrencyValue(value) {
-    if (!value) return 0;
-    const strValue = String(value);
-    const numericString = strValue.replace(/Rs\.|,/g, '');
-    return parseFloat(numericString) || 0;
-}
-
 // ... (keep all your existing functions until createProductCard) ...
 
 function createProductCard(item) {
