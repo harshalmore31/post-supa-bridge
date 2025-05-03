@@ -42,5 +42,5 @@ jobs:
         uses: nuxt-hub/action@v1
         id: deploy
         with:
-          project-key: post-supa-bridg-mpe1
+          project-key: post-supa-bridg-cxi7
           directory: /supa-nuxt/dist
