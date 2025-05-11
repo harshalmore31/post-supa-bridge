@@ -91,6 +91,7 @@ header {
     gap: 10px;
     font-size: 14px;
     color: var(--text-light);
+    height: 32px; /* Consistent with iframe height */   
 }
 
 .status-indicator .dot {
@@ -98,10 +99,8 @@ header {
     height: 10px;
     border-radius: 50%;
     background-color: var(--success);
-}
-
-.status-indicator .dot.offline {
-    background-color: var(--danger);
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .stats-container {
@@ -579,5 +578,14 @@ header {
         padding-bottom: 10px;
         white-space: nowrap;
         width: 100%;
+    }
+
+    .header-right {
+        margin: 10px 0;
+        justify-content: center;
+    }
+    
+    .status-badge iframe {
+        max-width: 100%;
     }
 }
