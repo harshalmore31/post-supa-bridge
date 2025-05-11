@@ -1,6 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
+
   devtools: {
     enabled: true,
 
@@ -28,7 +29,10 @@ export default defineNuxtConfig({
     '@nuxt/image',
     '@nuxt/scripts',
     '@nuxt/test-utils',
-    '@nuxt/ui'
+    '@nuxt/ui',
+    // Commented out modules that need to be installed first
+    // '@vercel/analytics/nuxt',
+    '@sentry/nuxt/module'
   ],
 
   // Add Font Awesome and Google Fonts
@@ -44,7 +48,30 @@ export default defineNuxtConfig({
           href: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
         },
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      ],
+      script: [
+        {
+          defer: true,
+          src: 'https://static.cloudflareinsights.com/beacon.min.js',
+          'data-cf-beacon': '{"token": "e7b00b29c6cd4115ae3a71bfd012b576"}'
+        }
       ]
     }
+  },
+
+  // Comment out Sentry config until the module is installed
+  /*
+  sentry: {
+    sourceMapsUploadOptions: {
+      org: 'harshalmore31',
+      project: 'javascript-nuxt'
+    },
+
+    autoInjectServerSentry: 'top-level-import'
+  },
+  */
+
+  sourcemap: {
+    client: 'hidden'
   }
 })
