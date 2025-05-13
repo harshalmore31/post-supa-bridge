@@ -22,6 +22,7 @@
         />
       </div>
     </div>
+    <PerformanceLogsButton />
   </template>
   
   <script setup>
