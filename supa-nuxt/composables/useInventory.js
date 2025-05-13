@@ -85,7 +85,7 @@ const endPerformanceTimer = (operationId) => {
 const currentGroupId = ref(null);
 
 const startEventGroup = (groupName) => {
-  currentGroupId.value = `group_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+  currentGroupId.value = `group_${groupName}_${Date.now()}_${Math.random().toString(36).substring(2)}`;
   return currentGroupId.value;
 };
 
@@ -138,6 +138,9 @@ export const useInventory = () => {
   const lastUpdated = ref('--');
   const searchTerm = ref('');
   const currentFilter = ref('all'); // 'all', 'low', 'medium', 'high'
+
+  // Set the Cloudflare Worker URL
+  const CLOUDFLARE_WORKER_URL = 'https://redis-cache.harshalmore2468.workers.dev';
 
   // To store stats potentially fetched from cache
   // This will be an object like { totalProducts: 0, totalValue: 0, lowStockCount: 0, cacheLastUpdated: "ISO_STRING" }
@@ -198,30 +201,30 @@ export const useInventory = () => {
 
     if (!skipRedis) {
       startTime = performance.now();
-      addTimingLog('CacheFetchAttempt', { source: '/api/cached-inventory', groupId });
+      addTimingLog('CacheFetchAttempt', { source: CLOUDFLARE_WORKER_URL, groupId });
       try {
-        console.log('Trying to fetch from Nuxt server API (/api/cached-inventory)...');
-        const cacheApiResponse = await $fetch('/api/cached-inventory');
+        console.log(`Trying to fetch from Cloudflare Worker (${CLOUDFLARE_WORKER_URL})...`);
+        const cacheApiResponse = await $fetch(CLOUDFLARE_WORKER_URL);
         endTime = performance.now();
         duration = parseFloat((endTime - startTime).toFixed(2));
 
         addTimingLog('CacheFetchResult', {
-          source: '/api/cached-inventory',
+          source: CLOUDFLARE_WORKER_URL,
           durationMs: duration,
-          success: !cacheApiResponse.error && cacheApiResponse.source === 'redis-cache',
-          cacheHit: cacheApiResponse.source === 'redis-cache',
+          success: !cacheApiResponse.error && cacheApiResponse.source === 'redis-cache-cf-worker',
+          cacheHit: cacheApiResponse.source === 'redis-cache-cf-worker',
           itemsCount: cacheApiResponse.items?.length,
           statsFound: !!cacheApiResponse.stats,
           error: cacheApiResponse.error,
           groupId
         });
 
-        if (cacheApiResponse && cacheApiResponse.source === 'redis-cache') {
+        if (cacheApiResponse && cacheApiResponse.source === 'redis-cache-cf-worker') {
           if (cacheApiResponse.items) {
             try {
               const newItems = cacheApiResponse.items.map(processRecord).filter(item => item !== null);
               inventoryItems.value = newItems;
-              console.log(`Loaded ${inventoryItems.value.length} items from Redis cache via server.`);
+              console.log(`Loaded ${inventoryItems.value.length} items from Redis cache via Cloudflare Worker.`);
               dataSourceLoaded.value.redis = true;
             } catch (parseError) {
               console.error('Error processing items from Redis cache:', parseError);
@@ -232,7 +235,7 @@ export const useInventory = () => {
             try {
               cachedStatsData.value = cacheApiResponse.stats;
               updateLastUpdatedTimestamp(cacheApiResponse.stats.cacheLastUpdated);
-              console.log('Loaded stats from Redis cache via server:', cachedStatsData.value);
+              console.log('Loaded stats from Redis cache via Cloudflare Worker:', cachedStatsData.value);
             } catch (parseError) {
               console.error('Error processing stats from Redis cache:', parseError);
               addTimingLog('CacheStatsError', { error: parseError.message || String(parseError), groupId });
@@ -245,7 +248,7 @@ export const useInventory = () => {
             }
           }
         } else {
-          console.log('Cache miss or error from /cached-inventory:', cacheApiResponse?.error);
+          console.log('Cache miss or error from Cloudflare Worker:', cacheApiResponse?.error);
         }
       } catch (err) {
         endTime = performance.now();
@@ -255,7 +258,7 @@ export const useInventory = () => {
           error: err.message || String(err),
           groupId
         });
-        console.error('Error fetching from /cached-inventory:', err);
+        console.error('Error fetching from Cloudflare Worker:', err);
       }
     }
 
