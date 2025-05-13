@@ -1,19 +1,21 @@
 import { Redis } from '@upstash/redis';
-import type { H3Event } from 'h3'; // For typing if needed
+import type { H3Event } from 'h3';
 
 // Helper to initialize Redis client, potentially memoized for warm functions
 let redis: Redis | null = null;
-function getRedisClient(event: H3Event) {
+function getRedisClient(event: H3Event): Redis | null {
   if (redis) return redis;
-  const config = useRuntimeConfig(event); // Use event for server routes
-  if (!config.public.upstashRedisUrl || !config.public.upstashRedisToken) {
-    console.error('Upstash Redis URL or Token not configured for Nuxt server route.');
+
+  const config = useRuntimeConfig(event);
+  const redisUrl = config.public.upstashRedisUrl as string | undefined;
+  const redisToken = config.public.upstashRedisToken as string | undefined;
+
+  if (!redisUrl || !redisToken) {
+    console.error('[API Route] Upstash Redis URL or Token is missing or invalid.');
     return null;
   }
-  redis = new Redis({
-    url: config.public.upstashRedisUrl as string,
-    token: config.public.upstashRedisToken as string,
-  });
+
+  redis = new Redis({ url: redisUrl, token: redisToken });
   return redis;
 }
 
@@ -21,29 +23,30 @@ export default defineEventHandler(async (event) => {
   const redisClient = getRedisClient(event);
 
   if (!redisClient) {
-    return { error: 'Redis not configured on server', items: null, stats: null, source: 'error' };
+    setResponseStatus(event, 500, 'Redis not configured on server');
+    return { error: 'Redis not configured on server', items: null, stats: null, source: 'server-error' };
   }
 
   try {
-    // Use pipeline for fewer round trips if fetching multiple keys
     const pipeline = redisClient.pipeline();
-    pipeline.get<string>("cache:all_inventory_items");
-    pipeline.get<string>("cache:inventory_stats");
-    const [cachedItemsResult, cachedStatsResult] = await pipeline.exec<[string | null, string | null]>();
+    pipeline.get("cache:all_inventory_items");
+    pipeline.get("cache:inventory_stats");
+    const [cachedItemsResult, cachedStatsResult] = await pipeline.exec<[any | null, any | null]>();
 
-    const items = cachedItemsResult ? JSON.parse(cachedItemsResult) : null;
-    const stats = cachedStatsResult ? JSON.parse(cachedStatsResult) : null;
+    const items = cachedItemsResult || null; // Directly use the deserialized data
+    const stats = cachedStatsResult || null;
 
     if (items || stats) {
       console.log(`[API Route] Fetched from Redis: ${items ? items.length : 'no'} items, stats ${stats ? 'found' : 'not found'}`);
       return { items, stats, error: null, source: 'redis-cache' };
     }
+
     console.log('[API Route] Cache miss in Redis.');
     return { items: null, stats: null, error: 'Cache miss', source: 'cache-miss' };
 
   } catch (error: any) {
     console.error('[API Route] Error fetching from Redis:', error.message);
-    // Don't expose full error to client for security
-    return { error: 'Failed to fetch from Redis cache', items: null, stats: null, source: 'error' };
+    setResponseStatus(event, 500, 'Error fetching from Redis cache');
+    return { error: 'Failed to fetch from Redis cache', items: null, stats: null, source: 'redis-error' };
   }
 });

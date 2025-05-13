@@ -1,5 +1,6 @@
 import psycopg2
 import os
+import re
 import json
 import select
 import threading
@@ -48,12 +49,19 @@ def get_stock_level_py(stock_quantity_str):
 
 def parse_currency_value_py(value_str):
     if value_str is None: return 0.0
-    # Remove "Rs.", commas, and leading/trailing whitespace
-    s = str(value_str).replace('Rs.', '').replace(',', '').strip()
+    s = str(value_str).strip()
+
+    # Use regex to find and remove "Rs." or "Rs " prefix, including optional space and dot
+    # This regex looks for "Rs" followed by an optional dot and an optional space, at the beginning.
+    s = re.sub(r'^[Rr][Ss]\.?\s*', '', s) # Case-insensitive for Rs
+
+    # Now remove commas
+    s = s.replace(',', '')
+    
     try:
         return float(s)
     except ValueError:
-        print(f"Warning: Could not parse currency value: {value_str}")
+        print(f"Warning: Could not parse currency value from original '{value_str}' (processed as '{s}')")
         return 0.0
 
 # PostgreSQL Connection
@@ -103,7 +111,14 @@ def get_all_items_from_pg():
         rows = cur.fetchall()
         columns = [desc[0] for desc in cur.description]
         for row in rows:
-            items_list.append(dict(zip(columns, row)))
+            items_list.append({
+                "item_id": str(row[0]) if row[0] is not None else "0",  # Treat item_id as a string
+                "name": row[1] if row[1] is not None else "",
+                "sku": row[2] if row[2] is not None else "",
+                "rate": parse_currency_value_py(row[3]),
+                "purchase rate": parse_currency_value_py(row[4]),
+                "stock on hand": int(row[5]) if row[5] is not None else 0
+            })
     except Exception as e:
         print(f"Error getting all items from PG: {e}")
     finally:
@@ -250,7 +265,7 @@ def update_redis_cache_and_stats():
         processed_items_for_cache.append({
             "item_id": int(item_pg.get("item_id")) if item_pg.get("item_id") is not None else None,
             "name": str(item_pg.get("name", 'Unknown Item')),
-            "sku": str(item_pg.get("sku", 'N/A')).replace("(", "").replace(")", ""),  # Fix Python syntax
+            "sku": str(item_pg.get("sku", 'N/A')).replace("(", "").replace(")", ""),
             "rate": parse_currency_value_py(item_pg.get("rate")),
             "purchase rate": parse_currency_value_py(item_pg.get("purchase rate")),
             "stock on hand": int(item_pg.get("stock on hand", 0))
@@ -258,8 +273,11 @@ def update_redis_cache_and_stats():
     
     # Cache the full list of processed items
     ALL_ITEMS_CACHE_KEY = "cache:all_inventory_items"
-    redis_client.set(ALL_ITEMS_CACHE_KEY, json.dumps(processed_items_for_cache))
-    print(f"Cached {len(processed_items_for_cache)} items to '{ALL_ITEMS_CACHE_KEY}'.")
+    try:
+        redis_client.set(ALL_ITEMS_CACHE_KEY, json.dumps(processed_items_for_cache), ex=3600)  # Add TTL of 1 hour
+        print(f"Cached {len(processed_items_for_cache)} items to '{ALL_ITEMS_CACHE_KEY}'.")
+    except Exception as e:
+        print(f"Error caching items to Redis: {e}")
 
     # Calculate and cache stats
     total_products = len(processed_items_for_cache)
@@ -279,11 +297,14 @@ def update_redis_cache_and_stats():
         "totalProducts": total_products,
         "totalValue": total_value,
         "lowStockCount": low_stock_count,
-        "lastRedisUpdateTimestamp": current_timestamp_iso 
+        "cacheLastUpdated": current_timestamp_iso 
     }
     STATS_CACHE_KEY = "cache:inventory_stats"
-    redis_client.set(STATS_CACHE_KEY, json.dumps(stats_data))
-    print(f"Redis stats cache updated at {current_timestamp_iso}. Stats: {stats_data}")
+    try:
+        redis_client.set(STATS_CACHE_KEY, json.dumps(stats_data), ex=3600)  # Add TTL of 1 hour
+        print(f"Redis stats cache updated at {current_timestamp_iso}. Stats: {stats_data}")
+    except Exception as e:
+        print(f"Error caching stats to Redis: {e}")
 
 # Initial Data Load
 def initial_data_load_to_redis_and_supabase():
