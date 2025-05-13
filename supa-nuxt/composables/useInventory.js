@@ -5,90 +5,142 @@ import { useNotifications } from './useNotifications';
 import { useFormatting } from './useFormatting'; // Import formatting composable
 
 export const useInventory = () => {
-  const { supabase, error: supabaseError } = useSupabase();
+  const { supabase, error: supabaseErrorFromComposable } = useSupabase();
   const { showNotification } = useNotifications();
   const { parseCurrencyValue, getStockLevel } = useFormatting(); // Get needed functions
 
   const inventoryItems = ref([]);
   const isLoading = ref(true);
   const connectionError = ref(null);
-  const isConnected = ref(false); // Real-time connection status
+  const isConnectedToRealtime = ref(false); // Specifically for Supabase Realtime
   const lastUpdated = ref('--');
   const searchTerm = ref('');
   const currentFilter = ref('all'); // 'all', 'low', 'medium', 'high'
+  
+  // To store stats potentially fetched from cache
+  // This will be an object like { totalProducts: 0, totalValue: 0, lowStockCount: 0, cacheLastUpdated: "ISO_STRING" }
+  const cachedStatsData = ref(null);
 
   let realtimeChannel = null;
 
-   // Process incoming records consistently
-   const processRecord = (record) => {
-     if (!record) return null;
-     // Ensure all expected fields exist, providing defaults if necessary
-     return {
-         item_id: parseInt(record.item_id, 10) || Date.now(), // Use timestamp as fallback ID if missing
-         name: String(record.name || 'Unknown Item'),
-         sku: String(record.sku || 'N/A').replace(/[()]/g, ''), // Clean SKU
-         // Use parseCurrencyValue for rates
-         rate: parseCurrencyValue(record.rate),
-         'purchase rate': parseCurrencyValue(record['purchase rate']),
-         'stock on hand': parseInt(record['stock on hand'], 10) || 0,
-     };
-   };
+  // Process incoming records consistently
+  const processRecord = (record) => {
+    if (!record) return null;
+    // Ensure all expected fields exist, providing defaults if necessary
+    return {
+        item_id: parseInt(record.item_id, 10) || Date.now(), // Use timestamp as fallback ID if missing
+        name: String(record.name || 'Unknown Item'),
+        sku: String(record.sku || 'N/A').replace(/[()]/g, ''), // Clean SKU
+        // Use parseCurrencyValue for rates
+        rate: parseCurrencyValue(record.rate),
+        'purchase rate': parseCurrencyValue(record['purchase rate']),
+        'stock on hand': parseInt(record['stock on hand'], 10) || 0,
+    };
+  };
 
+  const updateLastUpdatedTimestamp = (isoTimestampString) => {
+    if (isoTimestampString) {
+        try {
+            const date = new Date(isoTimestampString);
+            lastUpdated.value = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        } catch (e) {
+            console.warn("Could not parse lastUpdated timestamp:", isoTimestampString);
+            lastUpdated.value = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+    } else {
+        lastUpdated.value = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+  };
 
-  const fetchInventoryData = async () => {
+  const fetchInventoryData = async (isRetry = false) => {
+    isLoading.value = true;
+    if (!isRetry) connectionError.value = null; // Clear non-critical errors on fresh fetch
+    console.log('Attempting to fetch inventory data...');
+
+    let cacheUsed = false;
+
+    // Try fetching from Nuxt server API (Redis cache)
+    try {
+      console.log('Trying to fetch from Nuxt server API (/api/cached-inventory)...');
+      const cacheApiResponse = await $fetch('/api/cached-inventory');
+
+      if (cacheApiResponse && cacheApiResponse.source === 'redis-cache') {
+        if (cacheApiResponse.items) {
+          try {
+            inventoryItems.value = cacheApiResponse.items.map(processRecord).filter(item => item !== null);
+            console.log(`Loaded ${inventoryItems.value.length} items from Redis cache via server.`);
+          } catch (parseError) {
+            console.error('Error processing items from Redis cache:', parseError);
+          }
+        }
+        if (cacheApiResponse.stats) {
+          try {
+            cachedStatsData.value = cacheApiResponse.stats; // Store the whole stats object from cache
+            updateLastUpdatedTimestamp(cacheApiResponse.stats.cacheLastUpdated);
+            console.log('Loaded stats from Redis cache via server:', cachedStatsData.value);
+          } catch (parseError) {
+            console.error('Error processing stats from Redis cache:', parseError);
+          }
+        }
+        if (inventoryItems.value.length > 0 || cachedStatsData.value) {
+          cacheUsed = true; // Indicate cache provided some data
+          // Don't set isLoading false yet, Supabase Realtime setup might still happen or fallback
+        }
+      } else {
+        console.log('Cache miss or error from /cached-inventory:', cacheApiResponse?.error);
+      }
+    } catch (err) {
+      console.error('Error fetching from /cached-inventory:', err);
+      // But don't set critical connectionError yet, allow Supabase fallback
+    }
+
+    // Fetch from Supabase if cache wasn't fully sufficient or as fallback
     if (!supabase) {
-      console.error("Supabase client not available in fetchInventoryData.");
-      connectionError.value = supabaseError || 'Supabase client initialization failed.';
+      connectionError.value = supabaseErrorFromComposable || 'Supabase client initialization failed.';
       isLoading.value = false;
-      isConnected.value = false;
       showNotification('Error', connectionError.value, 'error');
       return;
     }
 
-    isLoading.value = true;
-    connectionError.value = null;
-    console.log('Fetching inventory data...');
+    // Fetch from Supabase if cache didn't provide items
+    // or it's a retry where we specifically want to bypass/refresh
+    if (!cacheUsed || inventoryItems.value.length === 0 || isRetry) {
+      console.log(cacheUsed || inventoryItems.value.length === 0 ? 'Fetching from Supabase (cache miss/empty or initial try)...' : 'Fetching from Supabase (retry)...');
+      try {
+        const { data, error: fetchError } = await supabase.from('items').select('*');
+        if (fetchError) throw fetchError;
 
-    try {
-      const { data, error } = await supabase
-        .from('items')
-        .select('*');
-
-      if (error) {
-        console.error('Supabase fetch error:', error);
-        throw error;
-      }
-
-      if (data) {
-        console.log('Data received:', data.length);
-        inventoryItems.value = data.map(processRecord).filter(item => item !== null); // Process and filter out nulls
-        isConnected.value = true; // Assume connected if fetch succeeds before channel confirms
-        showNotification('Data Loaded', `${inventoryItems.value.length} items loaded.`, 'success');
-        updateLastUpdatedTimestamp();
-      } else {
+        if (data) {
+          inventoryItems.value = data.map(processRecord).filter(item => item !== null);
+          // Supabase fetch is successful, its data is fresher than cache for items
+          // Stats will be recomputed. Update timestamp.
+          if (!cacheUsed || isRetry) { // show notification if this is the primary source
+            showNotification('Data Loaded', `${inventoryItems.value.length} items loaded from Supabase.`, 'success');
+          }
+          updateLastUpdatedTimestamp(); // timestamp as data is direct from DB source via Supabase
+          cachedStatsData.value = null; // Invalidate cached stats if we fetched fresh from Supabase
+        } else {
+          if (!cacheUsed) inventoryItems.value = []; // Clear if cache also failed
+        }
+        connectionError.value = null; // Clear previous non-critical errors
+      } catch (err) {
+        console.error('Error fetching from Supabase:', err);
+        if (!cacheUsed) { // Cache also failed, this is a critical error
+          connectionError.value = 'Could not fetch inventory data. ' + (err.message || '');
           inventoryItems.value = [];
-          console.warn('No data returned from Supabase.');
-          // Don't necessarily show an error, could be an empty table
+          showNotification('Fetch Error', connectionError.value, 'error');
+        } else {
+          showNotification('Supabase Fallback Failed', 'Could not refresh from Supabase, using cached data.', 'warning');
+        }
       }
-    } catch (err) {
-      console.error('Error fetching inventory data:', err);
-      connectionError.value = 'Could not fetch inventory data. ' + (err.message || '');
-      inventoryItems.value = [];
-      isConnected.value = false;
-      showNotification('Fetch Error', connectionError.value, 'error');
-    } finally {
-      isLoading.value = false;
     }
+    isLoading.value = false;
   };
 
-  const updateLastUpdatedTimestamp = () => {
-      const now = new Date();
-      lastUpdated.value = now.toLocaleTimeString();
-  }
-
   const handleRealtimeChange = (payload) => {
-    console.log('Real-time change:', payload);
-    updateLastUpdatedTimestamp();
+    console.log('Supabase Real-time change:', payload);
+    updateLastUpdatedTimestamp(); // Live update, so update timestamp
+    cachedStatsData.value = null; // Invalidate cached stats as live data has changed
 
     const { eventType, new: newRecord, old: oldRecord } = payload;
     let processed;
@@ -145,7 +197,7 @@ export const useInventory = () => {
   const setupRealtimeSubscription = () => {
     if (!supabase) {
       console.error("Supabase client not available for real-time subscription.");
-      isConnected.value = false;
+      isConnectedToRealtime.value = false;
       return;
     }
     if (realtimeChannel) {
@@ -153,7 +205,7 @@ export const useInventory = () => {
          return;
     }
 
-    console.log('Setting up real-time subscription...');
+    console.log('Setting up Supabase real-time subscription...');
     try {
         realtimeChannel = supabase
           .channel('items-changes')
@@ -163,30 +215,26 @@ export const useInventory = () => {
           )
           .subscribe((status, err) => {
               console.log(`Supabase channel status: ${status}`);
+              isConnectedToRealtime.value = status === 'SUBSCRIBED';
               if (status === 'SUBSCRIBED') {
-                  isConnected.value = true;
-                  connectionError.value = null; // Clear previous errors on successful connection
-                  console.log('Successfully connected to real-time updates.');
+                  connectionError.value = null; // Clear errors on successful RT connection
+                  // Optionally fetch again if concerned about missed events between initial load and RT connection
+                  if (!isLoading.value) fetchInventoryData(true); // 'true' to indicate retry/refresh
               } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                  isConnected.value = false;
-                  connectionError.value = `Real-time connection error: ${status}`;
-                  if(err) {
-                      console.error("Subscription error details:", err);
-                      connectionError.value += ` - ${err.message}`;
+                  // Don't overwrite a more critical initial load error
+                  if (!connectionError.value) {
+                     connectionError.value = `Real-time connection: ${status}`;
                   }
-                   showNotification('Connection Issue', connectionError.value, 'error');
-                  // Optional: Implement retry logic here
+                  showNotification('Real-time Issue', `Real-time: ${status}${err ? ' - ' + err.message : ''}`, 'warning');
               } else if (status === 'CLOSED') {
-                  isConnected.value = false;
+                  isConnectedToRealtime.value = false;
                   console.log('Real-time channel closed.');
-                  // Don't show error unless it was unexpected
               }
           });
          console.log('Realtime channel object:', realtimeChannel);
-
     } catch(error) {
          console.error("Error setting up Supabase channel:", error);
-         isConnected.value = false;
+         isConnectedToRealtime.value = false;
          connectionError.value = "Failed to setup real-time listener.";
          showNotification('Subscription Error', connectionError.value, 'error');
     }
@@ -199,7 +247,7 @@ export const useInventory = () => {
           const status = await supabase.removeChannel(realtimeChannel);
           console.log('Channel removal status:', status);
           realtimeChannel = null;
-          isConnected.value = false; // Explicitly set to false on cleanup
+          isConnectedToRealtime.value = false; // Explicitly set to false on cleanup
       } catch(error) {
           console.error("Error removing Supabase channel:", error);
       }
@@ -227,50 +275,49 @@ export const useInventory = () => {
   });
 
   const stats = computed(() => {
-      const totalProducts = inventoryItems.value.length;
-      const totalValue = inventoryItems.value.reduce((sum, item) => {
-          const rate = item.rate || 0; // Already parsed number
-          const stock = item['stock on hand'] || 0;
-          return sum + (rate * stock);
-      }, 0);
-      const lowStockCount = inventoryItems.value.filter(item => getStockLevel(item['stock on hand']) === 'low').length;
-
-      return {
-          totalProducts,
-          totalValue,
-          lowStockCount,
-      };
+    // If we have recently fetched stats from cache AND the item list reflects that cache, use cached stats.
+    // This avoids re-computation until a live update comes in or a full refresh happens.
+    if (cachedStatsData.value && inventoryItems.value.length === cachedStatsData.value.totalProducts) {
+        console.log("Using stats from cachedStatsData");
+        return { // Return in the consistent format expected by StatsContainer
+            totalProducts: cachedStatsData.value.totalProducts,
+            totalValue: cachedStatsData.value.totalValue,
+            lowStockCount: cachedStatsData.value.lowStockCount,
+        };
+    }
+    // Fall back to calculating from live inventoryItems
+    console.log("Calculating stats locally from live inventoryItems");
+    const totalProducts = inventoryItems.value.length;
+    const totalValue = inventoryItems.value.reduce((sum, item) => {
+        const rate = item.rate || 0;
+        const stock = item['stock on hand'] || 0;
+        return sum + (rate * stock);
+    }, 0);
+    const lowStockCount = inventoryItems.value.filter(item => getStockLevel(item['stock on hand']) === 'low').length;
+    
+    return { totalProducts, totalValue, lowStockCount };
   });
+
+  const retryConnection = () => {
+    console.log("Retrying connection (will try cache then Supabase)...");
+    connectionError.value = null; // Clear critical error before retry
+    fetchInventoryData(true); // true to indicate it's a retry/refresh
+    // Re-setup subscription if needed
+    if (!realtimeChannel || realtimeChannel?.state !== 'joined') {
+        closeRealtimeSubscription().then(setupRealtimeSubscription);
+    }
+  }
 
   // --- Lifecycle Hooks ---
 
   onMounted(async () => {
     await fetchInventoryData();
-    // Only setup subscription if fetch didn't fail catastrophically
-    if (!connectionError.value || !connectionError.value.includes('initialization failed')) {
-         setupRealtimeSubscription();
-    }
+    setupRealtimeSubscription();
   });
 
   onUnmounted(() => {
     closeRealtimeSubscription();
   });
-
-  // --- Methods ---
-   const retryConnection = () => {
-      console.log("Retrying connection...");
-      isLoading.value = true;
-      connectionError.value = null;
-      fetchInventoryData().then(() => {
-          // Re-setup subscription if fetch succeeds and channel is not already active
-         if (!connectionError.value && !realtimeChannel) {
-              setupRealtimeSubscription();
-         } else if (realtimeChannel?.state !== 'joined') {
-             // If channel exists but isn't joined, try rejoining
-             closeRealtimeSubscription().then(setupRealtimeSubscription);
-         }
-      });
-   }
 
   // --- Exposed State and Methods ---
   return {
@@ -278,7 +325,7 @@ export const useInventory = () => {
     filteredItems, // Items filtered by search/filter
     isLoading,
     connectionError,
-    isConnected,
+    isConnected: isConnectedToRealtime, // Expose the RT connection status
     lastUpdated,
     searchTerm,
     currentFilter,

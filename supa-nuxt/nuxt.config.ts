@@ -15,6 +15,8 @@ export default defineNuxtConfig({
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_KEY,
+      upstashRedisUrl: process.env.UPSTASH_REDIS_REST_URL,
+      upstashRedisToken: process.env.UPSTASH_REDIS_REST_TOKEN,
     }
   },
 
