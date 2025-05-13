@@ -2,6 +2,7 @@
     <div>
       <slot />
       <AppNotification /> <!-- Add notification component globally -->
+      <PerformanceLogsButton />
     </div>
   </template>
   
