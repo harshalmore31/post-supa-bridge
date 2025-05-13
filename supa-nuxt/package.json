@@ -21,6 +21,7 @@
     "@sentry/nuxt": "^9.17.0",
     "@supabase/supabase-js": "^2.49.4",
     "@unhead/vue": "^2.0.8",
+    "@upstash/redis": "^1.34.9",
     "@vercel/analytics": "^1.5.0",
     "eslint": "^9.26.0",
     "nuxt": "^3.17.1",
