@@ -1,14 +1,13 @@
 import { Redis } from '@upstash/redis';
-import type { H3Event } from 'h3';
 
 // Helper to initialize Redis client, potentially memoized for warm functions
 let redis: Redis | null = null;
-function getRedisClient(event: H3Event): Redis | null {
+function getRedisClient(): Redis | null {
   if (redis) return redis;
 
-  const config = useRuntimeConfig(event);
-  const redisUrl = config.public.upstashRedisUrl as string | undefined;
-  const redisToken = config.public.upstashRedisToken as string | undefined;
+  const config = useRuntimeConfig();
+  const redisUrl = config.upstashRedisUrl as string | undefined;
+  const redisToken = config.upstashRedisToken as string | undefined;
 
   if (!redisUrl || !redisToken) {
     console.error('[API Route] Upstash Redis URL or Token is missing or invalid.');
@@ -20,7 +19,7 @@ function getRedisClient(event: H3Event): Redis | null {
 }
 
 export default defineEventHandler(async (event) => {
-  const redisClient = getRedisClient(event);
+  const redisClient = getRedisClient();
 
   if (!redisClient) {
     setResponseStatus(event, 500, 'Redis not configured on server');
@@ -33,7 +32,7 @@ export default defineEventHandler(async (event) => {
     pipeline.get("cache:inventory_stats");
     const [cachedItemsResult, cachedStatsResult] = await pipeline.exec<[any | null, any | null]>();
 
-    const items = cachedItemsResult || null; // Directly use the deserialized data
+    const items = cachedItemsResult || null;
     const stats = cachedStatsResult || null;
 
     if (items || stats) {
