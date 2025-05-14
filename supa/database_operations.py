@@ -274,7 +274,7 @@ def update_redis_cache_and_stats():
     # Cache the full list of processed items
     ALL_ITEMS_CACHE_KEY = "cache:all_inventory_items"
     try:
-        redis_client.set(ALL_ITEMS_CACHE_KEY, json.dumps(processed_items_for_cache), ex=3600)  # Add TTL of 1 hour
+        redis_client.set(ALL_ITEMS_CACHE_KEY, json.dumps(processed_items_for_cache))  # Add TTL of 1 hour
         print(f"Cached {len(processed_items_for_cache)} items to '{ALL_ITEMS_CACHE_KEY}'.")
     except Exception as e:
         print(f"Error caching items to Redis: {e}")
