@@ -13,10 +13,10 @@ export default defineNuxtConfig({
   // Make environment variables available in the app
   runtimeConfig: {
     upstashRedisToken: process.env.UPSTASH_REDIS_REST_TOKEN,
+    upstashRedisUrl: process.env.UPSTASH_REDIS_REST_URL,
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_KEY,
-      upstashRedisUrl: process.env.UPSTASH_REDIS_REST_URL,
     }
   },
 
