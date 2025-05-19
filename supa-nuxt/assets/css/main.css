@@ -589,3 +589,18 @@ header {
         max-width: 100%;
     }
 }
+
+/* Dark Mode Variables */
+html.dark {
+    --primary: #4361ee; /* Maintained for consistency, adjust if needed for better dark mode aesthetics */
+    --secondary: #3f37c9; /* Maintained for consistency */
+    --accent: #4895ef; /* Maintained for consistency */
+    --background: #121212; /* Common dark theme background */
+    --card: #1e1e1e; /* Slightly lighter than background for cards/elevated surfaces */
+    --text: #e0e0e0; /* Light gray for readable text on dark backgrounds */
+    --text-light: #a0a0a0; /* Softer light gray for secondary text */
+    --danger: #e63946; /* Often kept same, but check contrast if issues arise */
+    --success: #2a9d8f; /* Often kept same */
+    --warning: #f4a261; /* Often kept same */
+    --shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Darker, more diffused shadow for dark themes */
+}
