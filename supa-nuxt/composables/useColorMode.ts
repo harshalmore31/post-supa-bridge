@@ -1,4 +1,4 @@
-import { useColorMode } from '@nuxtjs/color-mode';
+import { useColorMode } from '#imports';
 
 export const useColorModeExtended = () => {
   const colorMode = useColorMode();
